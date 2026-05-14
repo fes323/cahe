@@ -248,7 +248,27 @@ class Cahe {
         if (dirname(path) === this.imageDirName && existsSync(imagePath)) {
           const { width, format } = await sharp(imagePath).metadata();
 
-          if (width && gateWidth && width > gateWidth && format !== 'gif') {
+          if (format === 'svg') {
+            const convertedImage = await ImageUtils.convertImage(
+              imagePath,
+              width && gateWidth && width > gateWidth ? gateWidth : undefined,
+            );
+            const newName = `${this.imageDirName}/${basename(
+              path,
+              extname(path),
+            )}.png`;
+
+            this.htmlString = this.htmlString.replace(
+              new RegExp(path, 'g'),
+              newName,
+            );
+
+            if (convertedImage) {
+              archive.append(convertedImage, { name: newName });
+            } else {
+              signale.warn(`Image file ${imagePath} is missing`);
+            }
+          } else if (width && gateWidth && width > gateWidth && format !== 'gif') {
             let resizedImage = await ImageUtils.resizeImage(
               imagePath,
               gateWidth,
@@ -273,7 +293,6 @@ class Cahe {
             }
           } else if (
             format !== 'gif' &&
-            format !== 'svg' &&
             statSync(imagePath).size >= this.gateImagesSize
           ) {
             const compressedImage = await ImageUtils.compressImage(
@@ -285,23 +304,6 @@ class Cahe {
               archive.append(compressedImage, { name: path });
             } else {
               signale.warn(`Failed to compress image: ${path}`);
-            }
-          } else if (format === 'svg') {
-            const convertedImage = await ImageUtils.convertImage(imagePath);
-            const newName = `${this.imageDirName}/${basename(
-              path,
-              extname(path),
-            )}.png`;
-
-            this.htmlString = this.htmlString.replace(
-              new RegExp(path, 'g'),
-              newName,
-            );
-
-            if (convertedImage) {
-              archive.append(convertedImage, { name: newName });
-            } else {
-              signale.warn(`Image file ${imagePath} is missing`);
             }
           } else {
             archive.file(imagePath, { name: path });

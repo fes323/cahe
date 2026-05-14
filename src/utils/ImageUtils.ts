@@ -81,9 +81,18 @@ class ImageUtils {
     }
   }
 
-  static async convertImage(imagePath: string): Promise<Buffer | void> {
+  static async convertImage(
+    imagePath: string,
+    width?: number,
+  ): Promise<Buffer | void> {
     try {
-      const convertedImage = await sharp(imagePath)
+      const image = sharp(imagePath);
+
+      if (width) {
+        image.resize({ width });
+      }
+
+      const convertedImage = await image
         .toFormat('png', pngConvertConfig)
         // .sharpen()
         .toBuffer();
